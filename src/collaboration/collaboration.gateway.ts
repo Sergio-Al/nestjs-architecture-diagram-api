@@ -60,6 +60,16 @@ export class CollaborationGateway
     // Remove client from all rooms and broadcast awareness
     for (const [diagramId, room] of this.rooms.entries()) {
       if (room.clients.has(client.id)) {
+        const clientInfo = room.clients.get(client.id)!;
+
+        // Notify other clients to remove this user's cursor
+        client.to(diagramId).emit('cursor-update', {
+          socketId: client.id,
+          cursor: null,
+          userName: clientInfo.name,
+          color: clientInfo.color,
+        });
+
         room.clients.delete(client.id);
 
         // Remove awareness state for this client
@@ -239,6 +249,17 @@ export class CollaborationGateway
   ) {
     const room = this.rooms.get(data.diagramId);
     if (!room) return;
+
+    const clientInfo = room.clients.get(client.id);
+    if (clientInfo) {
+      // Notify other clients to remove this user's cursor
+      client.to(data.diagramId).emit('cursor-update', {
+        socketId: client.id,
+        cursor: null,
+        userName: clientInfo.name,
+        color: clientInfo.color,
+      });
+    }
 
     client.leave(data.diagramId);
     room.clients.delete(client.id);
